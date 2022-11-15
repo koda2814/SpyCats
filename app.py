@@ -1,11 +1,13 @@
 import os
 import sys
+from PIL import Image
 
 
 class Stega():
     """
     Класс для работы со стеганографией
     """
+
     eng = 'abcdefghijklmnopqrstuvwxyzÆÇÈÉÊÌÍABCDEFGHIJKLMNOPQRSTUVWXYZÎÏÐÑÒÓÔ'
     rus = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
 
@@ -16,8 +18,6 @@ class Stega():
         SYMBOLS_TABLE_RUS[sym[0]]=sym[1]
         SYMBOLS_TABLE_ENG[sym[1]]=sym[0]
 
-    # def __init__(self):
-    #     pass
 
     def __create_mask(self, degree):
         """Возвращает битовые маски для текста и для картинки"""
@@ -33,6 +33,7 @@ class Stega():
 
 
     def __convert_msg(self, msg):
+        """Разделяет спец-символами кириллицу и латиницу в шифруемом сообщении."""
         msg = msg.split()
 
         flag1, flag2 = True, False
@@ -53,6 +54,10 @@ class Stega():
 
 
     def encrypt(self, msg, degree, pic):
+        """
+        Функция для шифрования данных в bmp картинку
+        """
+
         if os.stat(pic).st_size * degree - 54 < len(msg.encode('utf-8'))*8: #проверка на вместимость сообщения в картинку
             print('MESSAGE TO ENCRYPT TOO BIG, CHOOSE ANOTHER PICTURE OR SMALLER VALUE OF DEGREE')
             return None
@@ -76,8 +81,6 @@ class Stega():
 
             if cyrillic_flag:
                 sym = Stega.SYMBOLS_TABLE_ENG.get(sym, sym)
-            
-            # print(sym)
 
             sym = ord(sym) #представление символа в бинарном виде
             for iter in range(0, int(8/degree)): #количество итераций (сдвигов)
@@ -99,10 +102,12 @@ class Stega():
         startbmp.close()
         encodebmp.close()
         
-        
 
         
     def decrypt(self, degree, pic):
+        """
+        Расшифровывает содержимое из bmp картинки
+        """
         
         encodebmp = open(pic, 'rb')
         msg = ''
@@ -149,27 +154,17 @@ class Stega():
 
 def main():
 
+    img = Image.open('pics/cat.png').convert('RGB')
+    img.save('pics/cat_rgb.png')
+    # print(img.mode)
+
     inst = Stega()
-    inst.encrypt('hello I love OOP Я люблю ооп', 2, 'vangog.bmp')
+    inst.encrypt('hello I love OOP', 2, 'pics/cat_rgb.png')
     message = inst.decrypt(2, 'encode.bmp')
-    print(message)
+    print(message) #output: hello I love OOP
 
-    # file_to_read = open('1984.txt', 'r', encoding='utf-8')
-    # file_to_write = open('encode_message.txt', 'w', encoding='utf-8')
 
-    # msg = file_to_read.read()
-
-    # # print("CONVERTED: ", convert_msg(msg))
-    # # print(len(convert_msg(msg)))
-
-    # encrypt(msg, 4, 'vangog.bmp')
-    # decode_msg = decrypt(4, 'encode.bmp')
-    # file_to_write.write(decode_msg)
-
-    # file_to_write.close()
-    # file_to_read.close()
-    # print(decode_msg)
-    print('завершено')
+    # print('завершено')
 
 
 
