@@ -71,7 +71,7 @@ class Stega():
 
     def encrypt(self, msg, degree, pic):
         """
-        Функция для шифрования данных в bmp картинку
+        Функция для шифрования данных в картинку
         """
 
         if os.stat(pic).st_size * degree - 54 < len(msg.encode('utf-8'))*8: #проверка на вместимость сообщения в картинку
@@ -99,6 +99,7 @@ class Stega():
 
             sym = ord(sym) #представление символа в бинарном виде
             for iter in range(0, int(8/degree)): #количество итераций (сдвигов)
+
                 img_byte, coords, id = next(pixel) #получаем байт, координаты пикселя и идентификатор RGB
                 x, y = coords[0], coords[1]
                 img_byte &= img_mask #стираем последние биты изображения с помощью маски
@@ -107,46 +108,39 @@ class Stega():
                 bits >>= (8 - degree) #сдвигаем начальные биты сообщения на конец
 
                 img_byte |= bits #объединяем и получаем конечный зашифрованный бит
-                print(encode_img_pixels[x, y])
-                encoded_rgb = list(encode_img_pixels[x, y])
-                encoded_rgb[id] = img_byte #записываем его в зашифрованную картинку
-                print('\t', tuple(encoded_rgb))
-                encode_img_pixels[x, y] = tuple(encoded_rgb)
-
+                encoded_rgb = list(encode_img_pixels[x, y]) #преобразуем кортеж в список, т.к. кортеж неизменяемый
+                encoded_rgb[id] = img_byte
+                encode_img_pixels[x, y] = tuple(encoded_rgb) #записываем зашифрованный байт в картинку
 
                 sym <<= degree
         
-        print('зашифрованано', '='*30)
-        for x in range(10):
-            print(f"pix {encode_img_pixels[x, 0]}")
-
-
+        encode_img.save('pics/encoded.png')
         
 
         
     def decrypt(self, degree, pic):
         """
-        Расшифровывает содержимое из bmp картинки
+        Расшифровывает содержимое из картинки
         """
         
-        encodebmp = open(pic, 'rb')
+        encode_img = Image.open(pic)
         msg = ''
-
-        encodebmp.seek(54) #начинаем с 54 т.к. первые 54 байта несут системную информацию о картинке
 
         img_mask = self.__create_mask(degree)[1] 
         img_mask = ~ img_mask #операция двоичного отрицания, получаем обратную маску для bmp
 
         cyrillic_flag = False
 
+        encode_pixel = self.__get_pixel(encode_img)
+
         while True:
             sym = 0
             for iter in range(0, int(8/degree)): #количество итераций (сдвигов)
-                bmp_byte = int.from_bytes(encodebmp.read(1), sys.byteorder) #получаем байт из зашифрованногов bmp
-                bmp_byte &= img_mask #стираем RGB биты изображения с помощью обратной маски
+                enc_byte, coords, id = next(encode_pixel) #получаем байт, координаты пикселя и идентификатор RGB
+                enc_byte &= img_mask #стираем RGB биты изображения с помощью обратной маски
                 
                 sym <<= degree #сдвигаем старые биты влево на степень сдвига (шаг)
-                sym |= bmp_byte #на место старых битов ставим биты из шифрованного bmp
+                sym |= enc_byte #на место старых битов ставим биты из шифрованного bmp
 
             sym = chr(sym)
 
@@ -165,7 +159,6 @@ class Stega():
 
             msg += sym 
 
-        encodebmp.close()
         return msg
 
 
@@ -179,12 +172,12 @@ def main():
     # print(img.mode)
 
     inst = Stega()
-    inst.encrypt('hello I love OOP', 2, 'pics/cat.png')
-    # message = inst.decrypt(2, 'encode.bmp')
-    # print(message) #output: hello I love OOP
+    inst.encrypt('привет я люблю ООП', 2, 'pics/cat.png')
+    message = inst.decrypt(2, 'pics/encoded.png')
+    print(message) #output: hello I love OOP
 
 
-    # print('завершено')
+    print('завершено')
 
 
 
